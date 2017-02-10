@@ -1,22 +1,33 @@
 package com.abc;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class Bank {
-    private List<Customer> customers;
+	
+	//Customer name is assumed as key
+    private Map<String,Customer> customers; 
+    
+    private static Bank bank =new Bank();
 
-    public Bank() {
-        customers = new ArrayList<Customer>();
+    private Object lock = new Object();
+    
+
+    private Bank(){
+        customers = new ConcurrentHashMap<String, Customer>();//Thread safety required
     }
 
+    public static Bank getBank(){
+    	return bank;
+    }
+    
     public void addCustomer(Customer customer) {
-        customers.add(customer);
+        customers.put(customer.getName(), customer);
     }
 
     public String customerSummary() {
         String summary = "Customer Summary";
-        for (Customer c : customers)
+        for (Customer c : customers.values())
             summary += "\n - " + c.getName() + " (" + format(c.getNumberOfAccounts(), "account") + ")";
         return summary;
     }
@@ -29,11 +40,20 @@ public class Bank {
 
     public double totalInterestPaid() {
         double total = 0;
-        for(Customer c: customers)
+        for(Customer c: customers.values())
             total += c.totalInterestEarned();
         return total;
     }
 
+    public boolean transferMoney(String customerName,int fromAccountId,int toAccountId,double amount){
+    	
+    	Customer customer = customers.get(customerName);
+    	if(customer==null){
+    		throw new IllegalArgumentException(customerName + " does not exist");
+    	}
+        return customer.transferAmount(fromAccountId, toAccountId, amount);
+    }
+    
     public String getFirstCustomer() {
         try {
             customers = null;
